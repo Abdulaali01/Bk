@@ -1,702 +1,654 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>نظام مراقبة انتهاء المنتجات</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>نظام مراقبة انتهاء المنتجات الغذائية</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: Tahoma, Arial, sans-serif;
+  background: #f0f2f5;
+  padding: 15px;
+  color: #1a1a1a;
+  touch-action: manipulation;
+}
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #1a1a1a;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.card {
+  padding: 18px 10px;
+  border-radius: 14px;
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+.card:active {
+  transform: translateY(0);
+}
+.card-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+.card-count {
+  font-size: 36px;
+  font-weight: bold;
+}
+.card-total { background: #2563eb; }
+.card-good { background: #16a34a; }
+.card-near { background: #eab308; color: #1a1a1a; }
+.card-danger { background: #f97316; }
+.card-expired { background: #dc2626; }
 
-body{
-font-family:Tahoma,Arial;
-background:#f4f6f9;
-margin:0;
-padding:15px;
-color:#111;
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+input, select, .btn {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  color: #fff;
+  transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 44px;
+}
+.btn:hover { opacity: 0.9; }
+.btn-blue { background: #2563eb; }
+.btn-green { background: #16a34a; }
+.btn-red { background: #dc2626; }
+.btn-orange { background: #f97316; }
+.btn-gray { background: #64748b; }
+
+.search-box {
+  width: 100%;
+  margin: 12px 0;
 }
 
-.box{
-max-width:1350px;
-margin:auto;
-background:#fff;
-padding:18px;
-border-radius:16px;
-box-shadow:0 5px 20px #0001;
+.filter-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+.filter-btns .btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
-h2{
-text-align:center;
-margin:5px 0 20px;
-color:#0f172a;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #e5e7eb;
+  padding: 10px 8px;
+  text-align: center;
+}
+th {
+  background: #1e293b;
+  color: #fff;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+}
+tr:hover { background: #f8fafc; }
+.good-row { background: #dcfce7; }
+.near-row { background: #fef9c3; }
+.danger-row { background: #ffedd5; }
+.expired-row { background: #fee2e2; color: #991b1b; font-weight: bold; }
+
+.actions-btn {
+  padding: 5px 10px;
+  margin: 2px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-gap:12px;
-margin-bottom:15px;
+.empty-msg {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 16px;
 }
 
-.card{
-padding:16px;
-border-radius:14px;
-text-align:center;
-color:#fff;
-font-weight:bold;
+/* Modal for filtered view */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  padding: 16px 20px;
+  background: #1e293b;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { margin: 0; font-size: 18px; }
+.modal-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); }
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.total{background:#2563eb}
-.good{background:#16a34a}
-.near{background:#eab308}
-.danger{background:#f97316}
-.expired{background:#dc2626}
-
-.card span{
-display:block;
-font-size:30px;
-margin-top:8px;
+@media (max-width: 600px) {
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .form-row { grid-template-columns: 1fr; }
+  th, td { padding: 8px 4px; font-size: 12px; }
 }
-
-.controls{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-gap:8px;
-margin-bottom:12px;
-}
-
-input,button{
-padding:10px;
-border-radius:10px;
-border:1px solid #ccc;
-font-size:15px;
-}
-
-button{
-border:none;
-cursor:pointer;
-background:#2563eb;
-color:#fff;
-font-weight:bold;
-}
-
-button:hover{
-opacity:.9;
-}
-
-.btn-red{
-background:#dc2626;
-}
-
-.btn-green{
-background:#16a34a;
-}
-
-.btn-gray{
-background:#64748b;
-}
-
-.btn-orange{
-background:#f97316;
-}
-
-.search{
-width:100%;
-margin:10px 0;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:10px;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:9px;
-text-align:center;
-font-size:14px;
-}
-
-th{
-background:#0f172a;
-color:#fff;
-}
-
-tr.good-row{
-background:#dcfce7;
-}
-
-tr.near-row{
-background:#fef9c3;
-}
-
-tr.danger-row{
-background:#ffedd5;
-}
-
-tr.expired-row{
-background:#fee2e2;
-color:#991b1b;
-font-weight:bold;
-}
-
-.actions button{
-padding:6px 10px;
-margin:2px;
-font-size:13px;
-}
-
-#reader{
-width:320px;
-margin:15px auto;
-display:none;
-}
-
-@media(max-width:700px){
-
-table{
-font-size:12px;
-}
-
-th,td{
-padding:6px;
-}
-
-}
-
 </style>
 </head>
-
 <body>
 
-<div class="box" id="reportArea">
+<div class="container" id="reportArea">
+  <h2>📦 نظام مراقبة انتهاء المنتجات الغذائية</h2>
 
-<h2>📦 نظام مراقبة انتهاء المنتجات الغذائية</h2>
+  <!-- Cards -->
+  <div class="cards">
+    <div class="card card-total" onclick="openFilterModal('all'); return false;">
+      <div class="card-title">إجمالي المنتجات</div>
+      <div class="card-count" id="totalCount">0</div>
+    </div>
+    <div class="card card-good" onclick="openFilterModal('سليم'); return false;">
+      <div class="card-title">السليمة</div>
+      <div class="card-count" id="goodCount">0</div>
+    </div>
+    <div class="card card-near" onclick="openFilterModal('قريب انتهاء'); return false;">
+      <div class="card-title">قريب انتهاء</div>
+      <div class="card-count" id="nearCount">0</div>
+    </div>
+    <div class="card card-danger" onclick="openFilterModal('خطر'); return false;">
+      <div class="card-title">خطر</div>
+      <div class="card-count" id="dangerCount">0</div>
+    </div>
+    <div class="card card-expired" onclick="openFilterModal('منتهي'); return false;">
+      <div class="card-title">منتهي</div>
+      <div class="card-count" id="expiredCount">0</div>
+    </div>
+  </div>
 
-<div class="cards">
+  <!-- Add Form -->
+  <div class="form-row">
+    <input type="text" id="productName" placeholder="اسم المنتج" autocomplete="off">
+    <input type="number" id="quantity" placeholder="الكمية" value="1" autocomplete="off">
+    <input type="text" id="barcode" placeholder="الباركود" autocomplete="off">
+    <input type="date" id="expiryDate" placeholder="تاريخ الانتهاء" autocomplete="off">
+    <div class="btn btn-blue" onclick="openScannerPage(); return false;">📷 امسح الباركود</div>
+    <div class="btn btn-green" onclick="doAddProduct(); return false;">➕ إضافة المنتج</div>
+  </div>
 
-<div class="card total">
-إجمالي المنتجات
-<span id="totalCount">0</span>
+  <!-- Search -->
+  <input type="text" class="search-box" id="searchInput" placeholder="🔍 بحث باسم المنتج أو الباركود" autocomplete="off" oninput="renderTable();">
+
+  <!-- Filter Buttons -->
+  <div class="filter-btns">
+    <div class="btn btn-gray" onclick="setFilter('all'); return false;">عرض الكل</div>
+    <div class="btn btn-green" onclick="setFilter('سليم'); return false;">السليمة</div>
+    <div class="btn" style="background:#eab308;color:#1a1a1a;" onclick="setFilter('قريب انتهاء'); return false;">قريب انتهاء</div>
+    <div class="btn btn-orange" onclick="setFilter('خطر'); return false;">الخطر</div>
+    <div class="btn btn-red" onclick="setFilter('منتهي'); return false;">المنتهية</div>
+    <div class="btn btn-green" onclick="exportExcel(); return false;">📊 تصدير Excel</div>
+    <div class="btn btn-red" onclick="exportPDF(); return false;">📄 تصدير PDF</div>
+  </div>
+
+  <!-- Main Table -->
+  <table id="productsTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>اسم المنتج</th>
+        <th>الكمية</th>
+        <th>الباركود</th>
+        <th>الانتهاء</th>
+        <th>المتبقي (يوم)</th>
+        <th>الحالة</th>
+        <th>الإجراء</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty-msg" id="emptyMsg" style="display:none;">لا توجد منتجات</div>
 </div>
 
-<div class="card good">
-سليم
-<span id="goodCount">0</span>
-</div>
-
-<div class="card near">
-قريب انتهاء
-<span id="nearCount">0</span>
-</div>
-
-<div class="card danger">
-خطر
-<span id="dangerCount">0</span>
-</div>
-
-<div class="card expired">
-منتهي
-<span id="expiredCount">0</span>
-</div>
-
-</div>
-
-<div class="controls">
-
-<input id="productName" placeholder="اسم المنتج">
-
-<input id="quantity" type="number" placeholder="الكمية">
-
-<input id="barcode" placeholder="الباركود">
-
-<input id="expiryDate" type="date">
-
-<button onclick="addProduct()">➕ إضافة المنتج</button>
-
-<button onclick="startBarcode()">📷 قراءة باركود</button>
-
-</div>
-
-<div id="reader"></div>
-
-<input
-class="search"
-id="searchInput"
-oninput="renderTable()"
-placeholder="🔍 بحث باسم المنتج أو الباركود">
-
-<div class="controls">
-
-<button onclick="filterStatus('all')" class="btn-gray">
-عرض الكل
-</button>
-
-<button onclick="filterStatus('سليم')" class="btn-green">
-السليمة
-</button>
-
-<button onclick="filterStatus('قريب انتهاء')" class="btn-orange">
-قريبة الانتهاء
-</button>
-
-<button onclick="filterStatus('خطر')" class="btn-orange">
-الخطر
-</button>
-
-<button onclick="filterStatus('منتهي')" class="btn-red">
-المنتهية
-</button>
-
-<button onclick="exportExcel()" class="btn-green">
-📊 تصدير Excel
-</button>
-
-<button onclick="exportPDF()" class="btn-red">
-📄 تصدير PDF
-</button>
-
-<button onclick="clearAll()" class="btn-red">
-🗑️ حذف الكل
-</button>
-
-</div>
-
-<table id="productsTable">
-
-<thead>
-
-<tr>
-<th>#</th>
-<th>اسم المنتج</th>
-<th>الكمية</th>
-<th>الباركود</th>
-<th>تاريخ الانتهاء</th>
-<th>الأيام المتبقية</th>
-<th>الحالة</th>
-<th>إجراء</th>
-</tr>
-
-</thead>
-
-<tbody></tbody>
-
-</table>
-
+<!-- Modal for card click -->
+<div class="modal-overlay" id="filterModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle">المنتجات</h3>
+      <div class="modal-close" onclick="closeFilterModal(); return false;">×</div>
+    </div>
+    <div class="modal-body">
+      <table id="modalTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>اسم المنتج</th>
+            <th>الكمية</th>
+            <th>الباركود</th>
+            <th>الانتهاء</th>
+            <th>المتبقي</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="modalTableBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
+// ===== DATA =====
+var products = [];
+try {
+  var stored = localStorage.getItem("expiryProducts");
+  if (stored) {
+    products = JSON.parse(stored);
+  }
+} catch(e) {
+  products = [];
+}
+var currentFilter = "all";
+var editIndex = null;
 
-let products =
-JSON.parse(localStorage.getItem("expiryProducts") || "[]");
-
-let currentFilter = "all";
-
-let editIndex = null;
-
-function saveData(){
-
-localStorage.setItem(
-"expiryProducts",
-JSON.stringify(products)
-);
-
+// ===== HELPERS =====
+function saveData() {
+  localStorage.setItem("expiryProducts", JSON.stringify(products));
 }
 
-function getStatus(days){
-
-if(days < 0) return "منتهي";
-
-if(days <= 7) return "خطر";
-
-if(days <= 30) return "قريب انتهاء";
-
-return "سليم";
-
+function calcDays(dateStr) {
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var expiry = new Date(dateStr);
+  expiry.setHours(0, 0, 0, 0);
+  return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
 }
 
-function getRowClass(status){
-
-if(status === "منتهي") return "expired-row";
-
-if(status === "خطر") return "danger-row";
-
-if(status === "قريب انتهاء") return "near-row";
-
-return "good-row";
-
+function getStatus(days) {
+  if (days < 0) return "منتهي";
+  if (days <= 7) return "خطر";
+  if (days <= 30) return "قريب انتهاء";
+  return "سليم";
 }
 
-function calcDays(date){
-
-const today = new Date();
-
-today.setHours(0,0,0,0);
-
-const expiry = new Date(date);
-
-expiry.setHours(0,0,0,0);
-
-return Math.ceil(
-(expiry - today) / (1000 * 60 * 60 * 24)
-);
-
+function getRowClass(status) {
+  if (status === "منتهي") return "expired-row";
+  if (status === "خطر") return "danger-row";
+  if (status === "قريب انتهاء") return "near-row";
+  return "good-row";
 }
 
-function addProduct(){
+// ===== ADD PRODUCT =====
+function doAddProduct() {
+  var name = document.getElementById("productName").value.trim();
+  var quantity = document.getElementById("quantity").value || 1;
+  var barcode = document.getElementById("barcode").value.trim();
+  var expiryDate = document.getElementById("expiryDate").value;
 
-const name =
-document.getElementById("productName").value.trim();
+  if (!barcode) {
+    alert("⚠️ قم بإدخال الباركود أو مسحه");
+    return false;
+  }
+  if (!expiryDate) {
+    alert("⚠️ حدد تاريخ الانتهاء");
+    return false;
+  }
 
-const quantity =
-document.getElementById("quantity").value;
+  var item = {
+    name: name || ("منتج " + barcode),
+    quantity: quantity,
+    barcode: barcode,
+    expiryDate: expiryDate
+  };
 
-const barcode =
-document.getElementById("barcode").value.trim();
+  if (editIndex !== null) {
+    products[editIndex] = item;
+    editIndex = null;
+  } else {
+    products.push(item);
+  }
 
-const expiryDate =
-document.getElementById("expiryDate").value;
+  document.getElementById("productName").value = "";
+  document.getElementById("quantity").value = "1";
+  document.getElementById("barcode").value = "";
+  document.getElementById("expiryDate").value = "";
 
-if(!name || !quantity || !expiryDate){
-
-alert("أدخل البيانات كاملة");
-
-return;
-
+  saveData();
+  renderTable();
+  alert("✅ تمت إضافة المنتج بنجاح");
+  return false;
 }
 
-const item = {
-name,
-quantity,
-barcode,
-expiryDate
-};
+// ===== RENDER TABLE =====
+function renderTable() {
+  var tbody = document.getElementById("tableBody");
+  var search = document.getElementById("searchInput").value.toLowerCase().trim();
+  tbody.innerHTML = "";
 
-if(editIndex !== null){
+  var total = 0, good = 0, near = 0, danger = 0, expired = 0;
+  var visibleCount = 0;
 
-products[editIndex] = item;
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var days = calcDays(p.expiryDate);
+    var status = getStatus(days);
 
-editIndex = null;
+    total++;
+    if (status === "سليم") good++;
+    else if (status === "قريب انتهاء") near++;
+    else if (status === "خطر") danger++;
+    else if (status === "منتهي") expired++;
 
-}else{
+    var matchSearch = !search || p.name.toLowerCase().indexOf(search) !== -1 || p.barcode.toLowerCase().indexOf(search) !== -1;
+    var matchFilter = currentFilter === "all" || status === currentFilter;
 
-products.push(item);
+    if (matchSearch && matchFilter) {
+      visibleCount++;
+      var tr = document.createElement("tr");
+      tr.className = getRowClass(status);
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${p.quantity}</td>
+        <td>${escapeHtml(p.barcode)}</td>
+        <td>${p.expiryDate}</td>
+        <td>${days}</td>
+        <td>${status}</td>
+        <td>
+          <div class="actions-btn" style="background:#2563eb;" onclick="editProduct(${i}); return false;">تعديل</div>
+          <div class="actions-btn" style="background:#dc2626;" onclick="deleteProduct(${i}); return false;">حذف</div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
 
+  document.getElementById("totalCount").textContent = total;
+  document.getElementById("goodCount").textContent = good;
+  document.getElementById("nearCount").textContent = near;
+  document.getElementById("dangerCount").textContent = danger;
+  document.getElementById("expiredCount").textContent = expired;
+
+  document.getElementById("emptyMsg").style.display = visibleCount === 0 ? "block" : "none";
 }
 
-document.getElementById("productName").value = "";
-
-document.getElementById("quantity").value = "";
-
-document.getElementById("barcode").value = "";
-
-document.getElementById("expiryDate").value = "";
-
-saveData();
-
-renderTable();
-
+function escapeHtml(text) {
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }
 
-function renderTable(){
-
-const tbody =
-document.querySelector("#productsTable tbody");
-
-tbody.innerHTML = "";
-
-const search =
-document.getElementById("searchInput")
-.value
-.trim()
-.toLowerCase();
-
-let total=0;
-let good=0;
-let near=0;
-let danger=0;
-let expired=0;
-
-products.forEach((p,index)=>{
-
-const days = calcDays(p.expiryDate);
-
-const status = getStatus(days);
-
-total++;
-
-if(status==="سليم") good++;
-
-if(status==="قريب انتهاء") near++;
-
-if(status==="خطر") danger++;
-
-if(status==="منتهي") expired++;
-
-const matchSearch =
-p.name.toLowerCase().includes(search) ||
-(p.barcode || "").toLowerCase().includes(search);
-
-const matchFilter =
-currentFilter === "all" ||
-status === currentFilter;
-
-if(matchSearch && matchFilter){
-
-const tr = document.createElement("tr");
-
-tr.className = getRowClass(status);
-
-tr.innerHTML = `
-
-<td>${index+1}</td>
-
-<td>${p.name}</td>
-
-<td>${p.quantity}</td>
-
-<td>${p.barcode || "-"}</td>
-
-<td>${p.expiryDate}</td>
-
-<td>${days}</td>
-
-<td>${status}</td>
-
-<td class="actions">
-
-<button onclick="editProduct(${index})">
-تعديل
-</button>
-
-<button class="btn-red"
-onclick="deleteProduct(${index})">
-حذف
-</button>
-
-</td>
-
-`;
-
-tbody.appendChild(tr);
-
+// ===== EDIT / DELETE =====
+function editProduct(index) {
+  var p = products[index];
+  document.getElementById("productName").value = p.name;
+  document.getElementById("quantity").value = p.quantity;
+  document.getElementById("barcode").value = p.barcode;
+  document.getElementById("expiryDate").value = p.expiryDate;
+  editIndex = index;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  return false;
 }
 
+function deleteProduct(index) {
+  if (confirm("هل تريد حذف هذا المنتج؟")) {
+    products.splice(index, 1);
+    saveData();
+    renderTable();
+  }
+  return false;
+}
+
+// ===== FILTER =====
+function setFilter(status) {
+  currentFilter = status;
+  renderTable();
+  return false;
+}
+
+// ===== MODAL =====
+function openFilterModal(status) {
+  var modal = document.getElementById("filterModal");
+  var tbody = document.getElementById("modalTableBody");
+  var title = document.getElementById("modalTitle");
+
+  var titles = {
+    "all": "جميع المنتجات",
+    "سليم": "المنتجات السليمة",
+    "قريب انتهاء": "المنتجات قريبة الانتهاء",
+    "خطر": "المنتجات في خطر",
+    "منتهي": "المنتجات المنتهية"
+  };
+  title.textContent = titles[status] || "المنتجات";
+
+  tbody.innerHTML = "";
+  var count = 0;
+
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var days = calcDays(p.expiryDate);
+    var st = getStatus(days);
+    if (status === "all" || st === status) {
+      count++;
+      var tr = document.createElement("tr");
+      tr.className = getRowClass(st);
+      tr.innerHTML = `
+        <td>${count}</td>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${p.quantity}</td>
+        <td>${escapeHtml(p.barcode)}</td>
+        <td>${p.expiryDate}</td>
+        <td>${days}</td>
+        <td>${st}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  if (count === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;color:#6b7280;">لا توجد منتجات في هذا التصنيف</td></tr>`;
+  }
+
+  modal.classList.add("active");
+  return false;
+}
+
+function closeFilterModal() {
+  document.getElementById("filterModal").classList.remove("active");
+  return false;
+}
+
+document.getElementById("filterModal").addEventListener("click", function(e) {
+  if (e.target === this) closeFilterModal();
 });
 
-document.getElementById("totalCount").textContent = total;
-
-document.getElementById("goodCount").textContent = good;
-
-document.getElementById("nearCount").textContent = near;
-
-document.getElementById("dangerCount").textContent = danger;
-
-document.getElementById("expiredCount").textContent = expired;
-
+// ===== SCANNER =====
+function openScannerPage() {
+  var scanWindow = window.open("", "_blank", "width=500,height=700");
+  if (!scanWindow) {
+    alert("تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة.");
+    return false;
+  }
+  var html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ماسح الباركود</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>
+<style>
+body { margin: 0; background: #000; overflow: hidden; font-family: Tahoma; }
+#reader { width: 100vw; height: 100vh; }
+.scan-box {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px; height: 260px;
+  border: 4px solid #fff; border-radius: 25px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+  z-index: 9999;
+}
+.ok {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 120px; color: #00ff00;
+  display: none; z-index: 999999;
+}
+</style>
+</head>
+<body>
+<div id="reader"></div>
+<div class="scan-box"></div>
+<div class="ok" id="ok">✅</div>
+<script>
+  var scanner = new Html5Qrcode("reader");
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 20, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+    function(decodedText) {
+      if (navigator.vibrate) navigator.vibrate(300);
+      document.getElementById("ok").style.display = "block";
+      window.opener.document.getElementById("barcode").value = decodedText;
+      setTimeout(function() { scanner.stop(); window.close(); }, 1000);
+    },
+    function(errorMessage) {}
+  );
+<\/script>
+</body>
+</html>`;
+  scanWindow.document.open();
+  scanWindow.document.write(html);
+  scanWindow.document.close();
+  return false;
 }
 
-function editProduct(index){
-
-const p = products[index];
-
-document.getElementById("productName").value = p.name;
-
-document.getElementById("quantity").value = p.quantity;
-
-document.getElementById("barcode").value = p.barcode;
-
-document.getElementById("expiryDate").value = p.expiryDate;
-
-editIndex = index;
-
+// ===== EXPORT =====
+function exportExcel() {
+  var data = [];
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var days = calcDays(p.expiryDate);
+    var status = getStatus(days);
+    data.push({
+      "م": i + 1,
+      "اسم المنتج": p.name,
+      "الكمية": p.quantity,
+      "الباركود": p.barcode,
+      "تاريخ الانتهاء": p.expiryDate,
+      "المتبقي (يوم)": days,
+      "الحالة": status
+    });
+  }
+  var ws = XLSX.utils.json_to_sheet(data);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "المنتجات");
+  XLSX.writeFile(wb, "تقرير_المنتجات.xlsx");
+  return false;
 }
 
-function deleteProduct(index){
+function exportPDF() {
+  var area = document.getElementById("reportArea");
+  html2canvas(area, { scale: 2 }).then(function(canvas) {
+    var imgData = canvas.toDataURL("image/png");
+    var pdf = new jspdf.jsPDF("l", "mm", "a4");
+    var width = pdf.internal.pageSize.getWidth();
+    var height = canvas.height * width / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, width, height);
+    pdf.save("تقرير_المنتجات.pdf");
+  });
+  return false;
+}
 
-if(confirm("هل تريد حذف المنتج؟")){
-
-products.splice(index,1);
-
-saveData();
-
+// ===== INIT =====
 renderTable();
-
-}
-
-}
-
-function clearAll(){
-
-if(confirm("سيتم حذف جميع المنتجات")){
-
-products = [];
-
-saveData();
-
-renderTable();
-
-}
-
-}
-
-function filterStatus(status){
-
-currentFilter = status;
-
-renderTable();
-
-}
-
-function exportExcel(){
-
-const data = products.map((p,i)=>{
-
-const days = calcDays(p.expiryDate);
-
-const status = getStatus(days);
-
-return {
-
-"م": i+1,
-"اسم المنتج": p.name,
-"الكمية": p.quantity,
-"الباركود": p.barcode,
-"تاريخ الانتهاء": p.expiryDate,
-"الأيام المتبقية": days,
-"الحالة": status
-
-};
-
-});
-
-const ws = XLSX.utils.json_to_sheet(data);
-
-const wb = XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(
-wb,
-ws,
-"تقرير المنتجات"
-);
-
-XLSX.writeFile(
-wb,
-"تقرير_المنتجات.xlsx"
-);
-
-}
-
-function exportPDF(){
-
-const area =
-document.getElementById("reportArea");
-
-html2canvas(area,{scale:2}).then(canvas=>{
-
-const imgData =
-canvas.toDataURL("image/png");
-
-const pdf =
-new jspdf.jsPDF("l","mm","a4");
-
-const pageWidth =
-pdf.internal.pageSize.getWidth();
-
-const imgWidth = pageWidth;
-
-const imgHeight =
-canvas.height * imgWidth / canvas.width;
-
-pdf.addImage(
-imgData,
-"PNG",
-0,
-0,
-imgWidth,
-imgHeight
-);
-
-pdf.save("تقرير_المنتجات.pdf");
-
-});
-
-}
-
-function startBarcode(){
-
-document.getElementById("reader").style.display = "block";
-
-const html5QrCode = new Html5Qrcode("reader");
-
-html5QrCode.start(
-
-{ facingMode: "environment" },
-
-{
-fps:10,
-qrbox:250
-},
-
-(decodedText)=>{
-
-document.getElementById("barcode").value =
-decodedText;
-
-html5QrCode.stop();
-
-document.getElementById("reader").innerHTML = "";
-
-document.getElementById("reader").style.display = "none";
-
-alert("تم قراءة الباركود");
-
-},
-
-(errorMessage)=>{
-
-}
-
-);
-
-}
-
-window.onload = function(){
-
-renderTable();
-
-const warningCount =
-products.filter(p=>{
-
-const days = calcDays(p.expiryDate);
-
-return days <= 7;
-
-}).length;
-
-if(warningCount > 0){
-
-setTimeout(()=>{
-
-alert(
-"⚠️ يوجد "
-+ warningCount +
-" منتج منتهي أو قريب انتهاء"
-);
-
-},500);
-
-}
-
-}
-
 </script>
 
 </body>
